@@ -43,7 +43,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-liniear-to-br from-slate-900 via-red-950 to-slate-900 overflow-hidden relative">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-950 to-slate-900 overflow-hidden relative">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-20 w-96 h-96 bg-red-600/20 rounded-full blur-3xl animate-pulse" />
@@ -82,6 +82,7 @@ export default function Home() {
             <p className="text-white/50 text-xs">Virtual Assistant</p>
           </div>
         </div>
+
       </header>
 
       {/* Main content */}
