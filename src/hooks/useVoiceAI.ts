@@ -71,12 +71,12 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
     const synthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
     const messagesRef = useRef<Message[]>([]);
     const optionsRef = useRef(options);
-    
+
     // STT tracking refs (prevents stale closure issues)
     const finalizedCountRef = useRef<number>(0);
     const committedTranscriptRef = useRef<string>('');
     const isListeningRef = useRef<boolean>(false);
-    
+
     // Timers
     const speechTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -269,7 +269,7 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
                 const errorDetail = errorData?.details || 'Unknown error';
-                
+
                 // Check for quota/rate limit errors
                 if (errorDetail.includes('Quota') || errorDetail.includes('Rate limit')) {
                     throw new Error('QUOTA_EXCEEDED');
@@ -291,9 +291,9 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
         } catch (error) {
             console.error('[AI] Error:', error);
             setState('idle');
-            
+
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            
+
             if (errorMessage === 'QUOTA_EXCEEDED') {
                 const quotaMessage = 'Maaf, kuota API sudah habis untuk hari ini. Silakan coba lagi besok atau hubungi administrator.';
                 setResponse(quotaMessage);
@@ -301,7 +301,7 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
             } else {
                 setResponse('Maaf, terjadi kesalahan koneksi. Silakan coba lagi.');
             }
-            
+
             optionsRef.current.onError?.('Gagal mendapatkan respons dari AI');
         }
     }, [speak, currentModel]);
@@ -375,30 +375,31 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
             committedTranscriptRef.current = '';
         };
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            recognition.onresult = (event: any) => {
-                let interimTranscript = '';
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        recognition.onresult = (event: any) => {
+            let interimTranscript = '';
+            const resultsLength = event.results.length;
 
-                // Process only NEW results (from finalizedResultsCount onwards)
-                for (let i = finalizedResultsCount; i < event.results.length; i++) {
-                    const result = event.results[i];
-                    const transcript = result[0].transcript;
+            // Process only NEW results (from finalizedCountRef onwards)
+            for (let i = finalizedCountRef.current; i < resultsLength; i++) {
+                const result = event.results[i];
+                const transcriptText = result[0].transcript;
 
-                    if (result.isFinal) {
-                        // Commit this result permanently
-                        committedTranscript += (committedTranscript ? ' ' : '') + transcript.trim();
-                        finalizedResultsCount = i + 1;
-                    } else {
-                        // Interim result - show but don't commit
-                        interimTranscript += transcript;
-                    }
+                if (result.isFinal) {
+                    // Commit this result permanently
+                    committedTranscriptRef.current += (committedTranscriptRef.current ? ' ' : '') + transcriptText.trim();
+                    finalizedCountRef.current = i + 1;
+                } else {
+                    // Interim result - show but don't commit
+                    interimTranscript += transcriptText;
                 }
+            }
 
-                // Display: committed + current interim
-                const displayTranscript = committedTranscript + (interimTranscript ? ' ' + interimTranscript : '');
+            // Display: committed + current interim
+            const displayTranscript = committedTranscriptRef.current + (interimTranscript ? ' ' + interimTranscript : '');
 
-                console.log('[STT] Display:', displayTranscript);
-                setTranscript(displayTranscript.trim());
+            console.log('[STT] Display:', displayTranscript);
+            setTranscript(displayTranscript.trim());
 
             // Schedule processing when we get a final result
             const lastResult = event.results[resultsLength - 1];
@@ -437,7 +438,7 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
             if (event.error === 'network' && networkRetryCountRef.current < MAX_NETWORK_RETRIES) {
                 networkRetryCountRef.current++;
                 setNetworkError(true);
-                
+
                 const delay = RETRY_DELAY_BASE_MS * networkRetryCountRef.current;
                 retryTimeoutRef.current = setTimeout(() => {
                     if (isListeningRef.current && recognitionRef.current) {
