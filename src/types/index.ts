@@ -1,5 +1,5 @@
 // Voice AI State Types
-export type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking';
+export type VoiceState = 'idle' | 'standby' | 'listening' | 'processing' | 'speaking';
 
 export interface Message {
     role: 'user' | 'assistant' | 'system';

@@ -5,12 +5,13 @@ import { VoiceState } from '@/types';
 
 interface VoiceControlProps {
     state: VoiceState;
-    onStart: () => void;
+    onStart?: () => void;
     onStop: () => void;
     onStopSpeaking?: () => void;
     isSupported: boolean;
     transcript?: string;
     networkError?: boolean;
+    isVADMode?: boolean;
 }
 
 const VoiceControl: React.FC<VoiceControlProps> = ({
@@ -21,12 +22,16 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
     isSupported,
     transcript,
     networkError = false,
+    isVADMode = false,
 }) => {
     // Single unified button handler
     const handleClick = () => {
         switch (state) {
             case 'idle':
-                onStart();
+                if (onStart) onStart();
+                break;
+            case 'standby':
+                onStop(); // Stop VAD mode
                 break;
             case 'listening':
                 onStop();
@@ -42,6 +47,8 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
 
     const getButtonColor = () => {
         switch (state) {
+            case 'standby':
+                return 'from-cyan-500 to-cyan-700';
             case 'listening':
                 return networkError
                     ? 'from-orange-500 to-red-600' // Orange/Red for network error retrying
@@ -57,6 +64,8 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
 
     const getStatusText = () => {
         switch (state) {
+            case 'standby':
+                return 'Siap mendengarkan';
             case 'listening':
                 return networkError ? 'Mencoba menghubungkan...' : 'Mendengarkan...';
             case 'processing':
@@ -64,12 +73,14 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
             case 'speaking':
                 return 'Berbicara...';
             default:
-                return 'Tekan untuk berbicara';
+                return isVADMode ? 'Mode Auto Aktif' : 'Tekan untuk berbicara';
         }
     };
 
     const getHintText = () => {
         switch (state) {
+            case 'standby':
+                return 'Tekan untuk mematikan mode auto';
             case 'listening':
                 return 'Tekan untuk berhenti';
             case 'processing':
@@ -86,6 +97,21 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
             return (
                 <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
                     <rect x="6" y="6" width="12" height="12" rx="2" />
+                </svg>
+            );
+        }
+
+        // Show standby icon for VAD mode
+        if (state === 'standby') {
+            return (
+                <svg
+                    className="w-10 h-10"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z" />
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="4 2" className="animate-spin" style={{ animationDuration: '4s' }} />
                 </svg>
             );
         }
@@ -131,6 +157,7 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
             {/* Single unified control button */}
             <button
                 onClick={handleClick}
+                disabled={state === 'idle' && isVADMode && !onStart}
                 className={`
                     relative w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full
                     bg-gradient-to-br ${getButtonColor()}
@@ -139,9 +166,18 @@ const VoiceControl: React.FC<VoiceControlProps> = ({
                     hover:scale-110 hover:shadow-2xl
                     active:scale-95
                     focus:outline-none focus:ring-4 focus:ring-white/30
+                    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
                 `}
-                title={state === 'idle' ? 'Mulai berbicara' : state === 'listening' ? 'Berhenti mendengarkan' : 'Hentikan dan tanya ulang'}
+                title={state === 'idle' ? 'Mulai berbicara' : state === 'standby' ? 'Matikan mode auto' : state === 'listening' ? 'Berhenti mendengarkan' : 'Hentikan dan tanya ulang'}
             >
+                {/* Pulse animation ring for standby (VAD waiting) */}
+                {state === 'standby' && (
+                    <>
+                        <span className="absolute inset-0 rounded-full bg-cyan-400 animate-ping opacity-20" style={{ animationDuration: '2s' }} />
+                        <span className="absolute inset-0 rounded-full bg-cyan-400 animate-pulse opacity-20" />
+                    </>
+                )}
+
                 {/* Pulse animation ring for listening */}
                 {state === 'listening' && (
                     <>

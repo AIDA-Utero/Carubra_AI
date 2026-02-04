@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { VoiceState, Message, ChatResponse } from '@/types';
 import { DEFAULT_MODEL, GREETING_MESSAGE, getModelById, AIProvider } from '@/constants/ai';
+import { useVAD } from './useVAD';
 
 // Configuration
 const SPEECH_DELAY_MS = 2500; // 2.5 seconds delay after user stops speaking
@@ -53,6 +54,11 @@ interface UseVoiceAIReturn {
     currentModel: string;
     setCurrentModel: (modelId: string) => void;
     networkError: boolean;
+    // VAD (Voice Activity Detection) features
+    isVADMode: boolean;
+    isVADSupported: boolean;
+    startVADMode: () => Promise<void>;
+    stopVADMode: () => void;
 }
 
 export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn => {
@@ -64,6 +70,7 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
     const [isSupported, setIsSupported] = useState(false);
     const [currentModel, setCurrentModel] = useState(options.initialModel || DEFAULT_MODEL);
     const [networkError, setNetworkError] = useState(false);
+    const [isVADMode, setIsVADMode] = useState(false);
 
     // Refs for mutable values (Strict Mode safe)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -627,6 +634,129 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
         setResponse(GREETING_MESSAGE);
     }, [speak]);
 
+    // ============================================
+    // VAD (Voice Activity Detection) Integration
+    // ============================================
+
+    // Ref to track if we should auto-restart listening after processing
+    const shouldRestartVADRef = useRef(false);
+
+    // VAD callbacks
+    const handleVADSpeechStart = useCallback(() => {
+        console.log('[VAD] Speech detected - starting STT');
+
+        // Only start if we're in standby mode
+        if (state === 'standby' && recognitionRef.current) {
+            // Reset tracking
+            setTranscript('');
+            finalizedCountRef.current = 0;
+            committedTranscriptRef.current = '';
+
+            // Start STT
+            isListeningRef.current = true;
+            setState('listening');
+            optionsRef.current.onStateChange?.('listening');
+
+            try {
+                recognitionRef.current.start();
+                console.log('[VAD+STT] Recognition started');
+            } catch (error: unknown) {
+                const err = error as Error;
+                if (err.name !== 'InvalidStateError') {
+                    console.error('[VAD+STT] Failed to start:', error);
+                }
+            }
+        }
+    }, [state]);
+
+    const handleVADSpeechEnd = useCallback(() => {
+        console.log('[VAD] Speech ended - will process when STT finalizes');
+        // The STT will handle processing via scheduleProcessing
+        // We just mark that VAD should restart after
+        shouldRestartVADRef.current = isVADMode;
+    }, [isVADMode]);
+
+    const handleVADError = useCallback((error: string) => {
+        console.error('[VAD] Error:', error);
+        optionsRef.current.onError?.(error);
+    }, []);
+
+    // Initialize VAD hook
+    const {
+        isVADActive,
+        startVAD,
+        stopVAD,
+        isSupported: isVADSupported,
+    } = useVAD({
+        onSpeechStart: handleVADSpeechStart,
+        onSpeechEnd: handleVADSpeechEnd,
+        onError: handleVADError,
+    });
+
+    // Start VAD Mode - Enables automatic voice detection
+    const startVADMode = useCallback(async () => {
+        console.log('[VAD Mode] Starting...');
+
+        if (!isVADSupported) {
+            console.error('[VAD Mode] Not supported');
+            optionsRef.current.onError?.('Voice Activity Detection is not supported in this browser');
+            return;
+        }
+
+        // Stop any ongoing speech/audio
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+
+        // Start VAD
+        await startVAD();
+        setIsVADMode(true);
+        shouldRestartVADRef.current = true;
+
+        // Set to standby state
+        setState('standby');
+        optionsRef.current.onStateChange?.('standby');
+
+        console.log('[VAD Mode] Active - waiting for speech');
+    }, [isVADSupported, startVAD]);
+
+    // Stop VAD Mode
+    const stopVADMode = useCallback(() => {
+        console.log('[VAD Mode] Stopping...');
+
+        stopVAD();
+        setIsVADMode(false);
+        shouldRestartVADRef.current = false;
+
+        // Stop STT if active
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.stop();
+            } catch {
+                // Ignore
+            }
+        }
+        isListeningRef.current = false;
+
+        setState('idle');
+        optionsRef.current.onStateChange?.('idle');
+
+        console.log('[VAD Mode] Stopped');
+    }, [stopVAD]);
+
+    // Auto-restart VAD after processing/speaking completes
+    useEffect(() => {
+        if (state === 'idle' && isVADMode && isVADActive && shouldRestartVADRef.current) {
+            console.log('[VAD Mode] Returning to standby after idle');
+            setState('standby');
+            optionsRef.current.onStateChange?.('standby');
+        }
+    }, [state, isVADMode, isVADActive]);
+
     return {
         state,
         transcript,
@@ -641,5 +771,10 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
         currentModel,
         setCurrentModel,
         networkError,
+        // VAD features
+        isVADMode,
+        isVADSupported,
+        startVADMode,
+        stopVADMode,
     };
 };

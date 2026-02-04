@@ -24,6 +24,7 @@ const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ state, className = '' }) =>
         background: 'transparent',
         glow: {
             idle: 'rgba(185, 28, 28, 0.3)',
+            standby: 'rgba(56, 189, 248, 0.4)',
             listening: 'rgba(34, 197, 94, 0.5)',
             processing: 'rgba(234, 179, 8, 0.5)',
             speaking: 'rgba(244, 63, 94, 0.5)',
@@ -247,6 +248,8 @@ const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ state, className = '' }) =>
                 targetMouth = 0.3 + Math.abs(Math.sin(time * 0.15)) * 0.7;
             } else if (state === 'listening') {
                 targetMouth = 0.1;
+            } else if (state === 'standby') {
+                targetMouth = 0.05;
             }
 
             // Smooth mouth animation using ref
@@ -346,18 +349,19 @@ const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ state, className = '' }) =>
             ctx.stroke();
             ctx.setLineDash([]);
 
-            // Pulsing dots around the avatar (for speaking/listening states)
-            if (state === 'speaking' || state === 'listening') {
-                const numDots = 8;
+            // Pulsing dots around the avatar (for speaking/listening/standby states)
+            if (state === 'speaking' || state === 'listening' || state === 'standby') {
+                const numDots = state === 'standby' ? 4 : 8;
+                const speed = state === 'standby' ? 0.01 : 0.02;
                 for (let i = 0; i < numDots; i++) {
-                    const angle = (i / numDots) * Math.PI * 2 + time * 0.02;
+                    const angle = (i / numDots) * Math.PI * 2 + time * speed;
                     const dotRadius = ringRadius + 20 + Math.sin(time * 0.1 + i) * 10;
                     const x = centerX + Math.cos(angle) * dotRadius;
                     const y = centerY + floatOffset + Math.sin(angle) * dotRadius;
-                    const size = 4 + Math.sin(time * 0.1 + i * 0.5) * 2;
+                    const size = state === 'standby' ? 3 + Math.sin(time * 0.05 + i * 0.5) * 1.5 : 4 + Math.sin(time * 0.1 + i * 0.5) * 2;
 
                     ctx.beginPath();
-                    ctx.fillStyle = colors.glow[state].replace('0.3', '0.9').replace('0.5', '0.9');
+                    ctx.fillStyle = colors.glow[state].replace('0.3', '0.9').replace('0.5', '0.9').replace('0.4', '0.9');
                     ctx.arc(x, y, size, 0, Math.PI * 2);
                     ctx.fill();
                 }
