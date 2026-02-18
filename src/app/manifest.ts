@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
-        name: 'Utero AI Avatar',
-        short_name: 'Utero AI',
-        description: 'Virtual Assistant berbasis AI untuk PT Utero Kreatif Indonesia',
+        name: 'CarubaAI - Virtual Assistant',
+        short_name: 'CarubaAI',
+        description: 'CarubaAI - Virtual Assistant berbasis AI untuk PT Utero Kreatif Indonesia',
         start_url: '/',
         display: 'standalone',
         background_color: '#0f172a',

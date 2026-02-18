@@ -90,7 +90,7 @@ export default function Home() {
           <div className="hidden sm:flex items-center gap-4">
             <Image
               src="/logouterov2.png"
-              alt="Utero Interactive AI"
+              alt="CarubaAI"
               width={180}
               height={50}
               className="h-12 md:h-14 w-auto object-contain"
@@ -215,7 +215,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="relative z-10 text-center py-3 shrink-0 landscape:hidden md:landscape:block">
         <p className="text-white/30 text-[10px] sm:text-xs">
-          © 2026 PT Utero Kreatif Indonesia X POLINEMA DEV
+          © 2026 CarubaAI — PT Utero Kreatif Indonesia X POLINEMA DEV
         </p>
       </footer>
     </div>

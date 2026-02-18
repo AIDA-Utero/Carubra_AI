@@ -1,5 +1,5 @@
 """
-Utero AI - Python Backend API
+CarubaAI - Python Backend API
 ==============================
 Backend Flask untuk TTS dan layanan AI lainnya.
 
@@ -69,7 +69,7 @@ def health_check():
     """Health check endpoint."""
     return jsonify({
         'status': 'healthy',
-        'service': 'Utero AI Backend',
+        'service': 'CarubaAI Backend',
         'version': '1.0.0',
         'timestamp': time.time()
     })
@@ -275,7 +275,7 @@ if __name__ == '__main__':
     debug = os.environ.get('FLASK_DEBUG', 'true').lower() == 'true'
     
     print("=" * 50)
-    print("🚀 Starting Utero AI Backend Server")
+    print("🚀 Starting CarubaAI Backend Server")
     print("=" * 50)
     print(f"📁 Audio Cache: {tts_engine.cache_dir}")
     print(f"📁 Audio Output: {tts_engine.output_dir}")

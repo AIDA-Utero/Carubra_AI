@@ -13,6 +13,43 @@ interface ChatRequest {
     history?: ChatMessage[];
 }
 
+// n8n Integration
+
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
+const USE_N8N = process.env.USE_N8N === 'true';
+
+// Call n8n Webhook
+async function callN8N(message: string, history: ChatMessage[], model: string): Promise<unknown> {
+    if (!N8N_WEBHOOK_URL) {
+        throw new Error('N8N_WEBHOOK_URL is not configured');
+    }
+
+    console.log('[n8n] Calling webhook:', N8N_WEBHOOK_URL);
+    console.log('[n8n] Model:', model, '| Message:', message.substring(0, 50) + '...');
+
+    const response = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            message,
+            history,
+            model,
+        }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('[n8n] Webhook error:', response.status, errorText);
+        throw new Error(`n8n webhook error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('[n8n] Response received successfully');
+    return data;
+}
+
 // Fallback models to try if the primary model fails (ordered by stability)
 const FALLBACK_MODELS = [
     'nvidia/nemotron-nano-9b-v2:free',
@@ -39,7 +76,7 @@ async function callOpenRouter(messages: ChatMessage[], model: string, retryWithF
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
             'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://utero.id',
-            'X-Title': 'Utero AI Avatar',
+            'X-Title': 'CarubaAI',
         },
         body: JSON.stringify({
             model,
@@ -158,6 +195,10 @@ async function callGemini(messages: ChatMessage[], model: string) {
     };
 }
 
+// ========================================
+// Main API Handler
+// ========================================
+
 export async function POST(request: NextRequest) {
     try {
         const body: ChatRequest = await request.json();
@@ -175,7 +216,30 @@ export async function POST(request: NextRequest) {
         const modelInfo = getModelById(selectedModel);
         const provider: AIProvider = requestedProvider || modelInfo?.provider || 'openrouter';
 
-        console.log('[Chat API] Selected model:', selectedModel, 'Provider:', provider);
+        // ========================================
+        // Mode 1: n8n as the AI Brain
+        // ========================================
+        if (USE_N8N && N8N_WEBHOOK_URL) {
+            console.log('[Chat API] Using n8n mode | Model:', selectedModel);
+
+            try {
+                const responseData = await callN8N(message, history, selectedModel);
+
+                return NextResponse.json({
+                    ...(responseData as object),
+                    _usedModel: selectedModel,
+                    _via: 'n8n',
+                });
+            } catch (n8nError) {
+                console.error('[Chat API] n8n failed, falling back to direct API:', n8nError);
+                // Fall through to direct API mode
+            }
+        }
+
+        // ========================================
+        // Mode 2: Direct API calls (fallback)
+        // ========================================
+        console.log('[Chat API] Using direct API mode | Model:', selectedModel, 'Provider:', provider);
 
         // Build messages array with system prompt and history
         const messages: ChatMessage[] = [
@@ -230,6 +294,7 @@ export async function POST(request: NextRequest) {
         const response = {
             ...(responseData as object),
             _usedModel: usedModel,
+            _via: 'direct',
         };
 
         return NextResponse.json(response);
@@ -258,7 +323,9 @@ export async function GET() {
 
     return NextResponse.json({
         status: 'ok',
-        message: 'Utero AI Chat API is running',
+        message: 'CarubaAI Chat API is running',
+        mode: USE_N8N ? 'n8n' : 'direct',
+        n8nConfigured: !!N8N_WEBHOOK_URL,
         hasGeminiKey: !!process.env.GEMINI_API_KEY,
         hasOpenRouterKey: !!process.env.OPENROUTER_API_KEY,
         defaultModel: DEFAULT_MODEL,

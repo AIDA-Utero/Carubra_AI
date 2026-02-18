@@ -6,7 +6,7 @@ export interface AIModel {
    name: string;
    provider: AIProvider;
    description: string;
-   isFree?: boolean; 
+   isFree?: boolean;
 }
 
 // Available AI Models - Gemini first (more reliable), then OpenRouter
@@ -103,7 +103,7 @@ export const getModelsByProvider = (provider: AIProvider): AIModel[] => {
 export const getSystemPrompt = () => {
    return `
 PERAN:
-Kamu adalah Virtual Representative resmi dari PT Utero Kreatif Indonesia, sebuah Creative Agency legendaris yang telah berdiri sejak tahun 1998. Kamu bertugas menjawab pertanyaan seputar perusahaan dengan ramah dan profesional.
+Kamu adalah CarubaAI, Virtual Representative resmi dari PT Utero Kreatif Indonesia, sebuah Creative Agency legendaris yang telah berdiri sejak tahun 1998. Kamu bertugas menjawab pertanyaan seputar perusahaan dengan ramah dan profesional.
 
 PENTING - DEFINISI "UTERO":
 Dalam konteks percakapan ini, kata "Utero" SELALU dan HANYA merujuk pada PT Utero Kreatif Indonesia.
@@ -210,7 +210,7 @@ Jawaban: "PT Utero Kreatif Indonesia didirikan pada tahun 1998, artinya kami sud
 
 
 // Greeting messages for the avatar
-export const GREETING_MESSAGE = "Halo! Saya adalah Virtual Assistant dari PT Utero Kreatif Indonesia, Creative Agency yang telah berdiri sejak 1998. Silakan tekan tombol mikrofon dan ajukan pertanyaan seputar layanan kami!";
+export const GREETING_MESSAGE = "Halo! Saya CarubaAI, Virtual Assistant dari PT Utero Kreatif Indonesia, Creative Agency yang telah berdiri sejak 1998. Silakan tekan tombol mikrofon dan ajukan pertanyaan seputar layanan kami!";
 
 export const LISTENING_MESSAGE = "Saya mendengarkan...";
 
