@@ -110,7 +110,7 @@ export default function Home() {
           {/* Desktop: logo + divider + subtitle */}
           <div className="hidden sm:flex items-center gap-5">
             <Image
-              src="/logouterov2.png"
+              src="/carubra-v1.png"
               alt="CarubraAI"
               width={180}
               height={50}
