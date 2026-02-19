@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Image from 'next/image';
-import { AvatarCanvas, VoiceControl, ChatBubble, ModelSelector } from '@/components';
+import { VoiceControl, ChatBubble, ModelSelector } from '@/components';
 import { useVoiceAI } from '@/hooks/useVoiceAI';
 import { AIModel } from '@/constants/ai';
 
@@ -119,7 +119,14 @@ export default function Home() {
         <div className="relative shrink-0 flex items-center justify-center w-[150px] h-[150px] sm:w-[200px] sm:h-[200px] lg:w-[30vh] lg:h-[30vh]">
           <div className={`absolute inset-0 rounded-full blur-2xl transition-all duration-500 ${state === 'standby' ? 'bg-cyan-500/30' : ''} ${state === 'listening' ? 'bg-green-500/30' : ''} ${state === 'processing' ? 'bg-yellow-500/30' : ''} ${state === 'speaking' ? 'bg-rose-500/30' : ''} ${state === 'idle' ? 'bg-red-500/20' : ''}`} />
 
-          <AvatarCanvas state={state} className="relative z-10 w-full h-full" />
+          <Image
+            src="/Avatar.png"
+            alt="Caruba AI Avatar"
+            width={400}
+            height={400}
+            className="relative z-10 w-full h-full object-contain"
+            priority
+          />
         </div>
 
         {/* Response & Controls Wrapper */}
