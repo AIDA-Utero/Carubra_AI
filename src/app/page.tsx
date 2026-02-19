@@ -90,7 +90,7 @@ export default function Home() {
           <div className="hidden sm:flex items-center gap-4">
             <Image
               src="/logouterov2.png"
-              alt="CarubaAI"
+              alt="CarubraAI"
               width={180}
               height={50}
               className="h-12 md:h-14 w-auto object-contain"
