@@ -85,25 +85,51 @@ export default function Home() {
       />
 
       {/* Header */}
-      <header className="relative z-50 flex items-center justify-between px-4 py-3 md:py-4 shrink-0 h-16 md:h-20">
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="hidden sm:flex items-center gap-4">
+      <header className="relative z-50 flex items-center justify-between px-5 md:px-8 py-4 md:py-5 shrink-0">
+        <div className="flex items-center gap-3 md:gap-5">
+          {/* Mobile: small logo only */}
+          <div className="flex sm:hidden items-center gap-3">
+            <Image
+              src="/carubra-v1.png"
+              alt="CarubaAI"
+              width={120}
+              height={120}
+              className="h-12 w-auto object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]"
+              priority
+            />
+            <div className="h-8 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" />
+            <div className="flex flex-col">
+              <p className="text-white/60 text-[10px] tracking-[0.15em] uppercase font-medium">
+                Virtual Assistant
+              </p>
+              <p className="text-white/35 text-[8px] tracking-wider">
+                by Utero Indonesia
+              </p>
+            </div>
+          </div>
+          {/* Desktop: logo + divider + subtitle */}
+          <div className="hidden sm:flex items-center gap-5">
             <Image
               src="/logouterov2.png"
-              alt="CarubraAI"
+              alt="CarubaAI"
               width={180}
               height={50}
               className="h-12 md:h-14 w-auto object-contain"
               priority
             />
-            <div className="h-8 w-px bg-white/10" />
-            <p className="text-white/50 text-xs md:text-sm tracking-widest uppercase font-medium">
-              Virtual Assistant
-            </p>
+            <div className="self-stretch w-px bg-gradient-to-b from-transparent via-white/20 to-transparent my-2" />
+            <div className="flex flex-col gap-1">
+              <p className="text-white/70 text-sm md:text-base tracking-[0.2em] uppercase font-semibold">
+                Virtual Assistant
+              </p>
+              <p className="text-white/40 text-xs md:text-sm tracking-wider font-light">
+                by Utero Indonesia
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="shrink-0 w-32 sm:w-auto">
+        <div className="shrink-0 w-32 sm:w-auto self-center">
           <ModelSelector
             selectedModel={currentModel}
             onModelChange={handleModelChange}
