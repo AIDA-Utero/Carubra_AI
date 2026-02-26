@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { VoiceState, Message, ChatResponse } from '@/types';
-import { DEFAULT_MODEL, DEFAULT_PROVIDER, GREETING_MESSAGE } from '@/constants/ai';
+import { GREETING_MESSAGE } from '@/constants/ai';
 import { useVAD } from './useVAD';
 
 // Configuration
@@ -37,7 +37,6 @@ interface UseVoiceAIOptions {
     onTranscript?: (text: string) => void;
     onResponse?: (text: string) => void;
     onError?: (error: string) => void;
-    initialModel?: string;
 }
 
 interface UseVoiceAIReturn {
@@ -51,8 +50,6 @@ interface UseVoiceAIReturn {
     stopSpeaking: () => void;
     messages: Message[];
     greet: () => void;
-    currentModel: string;
-    setCurrentModel: (modelId: string) => void;
     networkError: boolean;
     // VAD (Voice Activity Detection) features
     isVADMode: boolean;
@@ -68,8 +65,10 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
     const [response, setResponse] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
     const [isSupported, setIsSupported] = useState(false);
-    const [currentModel, setCurrentModel] = useState(options.initialModel || DEFAULT_MODEL);
     const [networkError, setNetworkError] = useState(false);
+
+    // Session ID for n8n conversation memory
+    const sessionIdRef = useRef<string>(`session-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
     const [isVADMode, setIsVADMode] = useState(false);
 
     // Refs for mutable values (Strict Mode safe)
@@ -249,9 +248,9 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
         speakWithWebSpeech(text);
     }, [speakWithPythonTTS, speakWithWebSpeech]);
 
-    // Process message and get AI response
+    // Process message and get AI response via n8n
     const processMessage = useCallback(async (userMessage: string) => {
-        console.log('[AI] Processing message:', userMessage);
+        console.log('[AI] Processing message via n8n:', userMessage);
         setState('processing');
         optionsRef.current.onStateChange?.('processing');
 
@@ -259,36 +258,26 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
         setMessages((prev) => [...prev, newUserMessage]);
 
         try {
-            const provider = DEFAULT_PROVIDER;
-
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: userMessage,
-                    model: DEFAULT_MODEL,
-                    provider: provider,
                     history: messagesRef.current.slice(-10),
+                    sessionId: sessionIdRef.current,
                 }),
             });
 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
                 const errorDetail = errorData?.details || 'Unknown error';
-
-                // Check for quota/rate limit errors
-                if (errorDetail.includes('Quota') || errorDetail.includes('Rate limit')) {
-                    throw new Error('QUOTA_EXCEEDED');
-                }
                 throw new Error(errorDetail);
             }
 
             const data: ChatResponse = await res.json();
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const via = (data as any)._via || 'unknown';
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const usedModel = (data as any)._usedModel || 'unknown';
-            console.log(`[AI] Response received via: ${via} | Model: ${usedModel}`);
+            const via = (data as any)._via || 'n8n';
+            console.log(`[AI] Response received via: ${via}`);
             const aiResponse = data.choices?.[0]?.message?.content || 'Maaf, terjadi kesalahan.';
             const cleanResponse = cleanTextForTTS(aiResponse);
 
@@ -302,20 +291,10 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
         } catch (error) {
             console.error('[AI] Error:', error);
             setState('idle');
-
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-            if (errorMessage === 'QUOTA_EXCEEDED') {
-                const quotaMessage = 'Maaf, kuota API sudah habis untuk hari ini. Silakan coba lagi besok atau hubungi administrator.';
-                setResponse(quotaMessage);
-                speak(quotaMessage);
-            } else {
-                setResponse('Maaf, terjadi kesalahan koneksi. Silakan coba lagi.');
-            }
-
+            setResponse('Maaf, terjadi kesalahan koneksi ke server AI. Silakan coba lagi.');
             optionsRef.current.onError?.('Gagal mendapatkan respons dari AI');
         }
-    }, [speak, currentModel]);
+    }, [speak]);
 
     const processMessageRef = useRef(processMessage);
     useEffect(() => {
@@ -772,8 +751,6 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
         stopSpeaking,
         messages,
         greet,
-        currentModel,
-        setCurrentModel,
         networkError,
         // VAD features
         isVADMode,

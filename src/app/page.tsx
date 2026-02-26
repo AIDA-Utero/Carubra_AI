@@ -243,7 +243,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="relative z-10 text-center py-3 shrink-0 landscape:hidden md:landscape:block">
         <p className="text-white/30 text-[10px] sm:text-xs">
-          © 2026 CarubraAI — I Don't Know DEV
+          © 2026 CarubraAI — PT Utero Kreatif Indonesia X DJJ DEV
         </p>
       </footer>
     </div>
