@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Message } from '@/types';
+import FormattedMessage from './FormattedMessage';
 
 interface ChatBubbleProps {
     messages: Message[];
@@ -36,7 +37,11 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ messages, currentResponse, clas
                             }
             `}
                     >
-                        <p className="text-xs sm:text-sm leading-relaxed">{message.content}</p>
+                        {message.role === 'assistant' ? (
+                            <FormattedMessage content={message.content} />
+                        ) : (
+                            <p className="text-xs sm:text-sm leading-relaxed">{message.content}</p>
+                        )}
                     </div>
                 </div>
             ))}

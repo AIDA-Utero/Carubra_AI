@@ -617,10 +617,7 @@ export const useVoiceAI = (options: UseVoiceAIOptions = {}): UseVoiceAIReturn =>
         setResponse(GREETING_MESSAGE);
     }, [speak]);
 
-    // ============================================
     // VAD (Voice Activity Detection) Integration
-    // ============================================
-
     // Ref to track if we should auto-restart listening after processing
     const shouldRestartVADRef = useRef(false);
 
