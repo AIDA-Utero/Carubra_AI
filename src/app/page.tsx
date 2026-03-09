@@ -161,12 +161,12 @@ export default function Home() {
                   {response}
                 </p>
               </div>
-            ) : messages.length > 0 ? (
-              <ChatBubble messages={messages} currentResponse={response} className="w-full" />
+            ) : messages.length > 0 || state === 'processing' ? (
+              <ChatBubble messages={messages} currentResponse={response} className="w-full" isProcessing={state === 'processing'} />
             ) : (
               <div className="text-center py-2">
                 <p className="text-white/50 text-sm md:text-base leading-relaxed max-w-md mx-auto">
-                  Tekan tombol mikrofon dan ajukan pertanyaan atau perintah apa pun kepada saya. 
+                  Tekan tombol mikrofon dan ajukan pertanyaan atau perintah apa pun kepada saya.
                 </p>
               </div>
             )}

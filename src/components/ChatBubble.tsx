@@ -7,16 +7,30 @@ import FormattedMessage from './FormattedMessage';
 interface ChatBubbleProps {
     messages: Message[];
     currentResponse?: string;
-    className?: string; // Allow custom styling/dimensions
+    className?: string;
+    isProcessing?: boolean;
 }
 
-const ChatBubble: React.FC<ChatBubbleProps> = ({ messages, currentResponse, className = '' }) => {
+// Typing indicator component with bouncing dots
+const TypingIndicator: React.FC = () => (
+    <div className="flex justify-start animate-fadeIn">
+        <div className="max-w-[90%] sm:max-w-[85%] px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md text-white border border-white/20 rounded-bl-none">
+            <div className="flex items-center gap-1.5">
+                <div className="typing-dot w-2 h-2 rounded-full bg-white/80" />
+                <div className="typing-dot w-2 h-2 rounded-full bg-white/80" />
+                <div className="typing-dot w-2 h-2 rounded-full bg-white/80" />
+            </div>
+        </div>
+    </div>
+);
+
+const ChatBubble: React.FC<ChatBubbleProps> = ({ messages, currentResponse, className = '', isProcessing = false }) => {
     const bottomRef = React.useRef<HTMLDivElement>(null);
 
-    // Auto scroll to bottom when new messages arrive
+    // Auto scroll to bottom when new messages arrive or processing starts
     React.useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, currentResponse]);
+    }, [messages, currentResponse, isProcessing]);
 
     return (
         <div className={`w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto overflow-y-auto px-1 sm:px-2 space-y-2 sm:space-y-3 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent ${className}`}>
@@ -45,6 +59,9 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ messages, currentResponse, clas
                     </div>
                 </div>
             ))}
+
+            {/* Typing indicator when processing */}
+            {isProcessing && <TypingIndicator />}
 
             {/* Current response being spoken */}
             {currentResponse && messages[messages.length - 1]?.content !== currentResponse && (
