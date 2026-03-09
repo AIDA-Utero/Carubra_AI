@@ -24,13 +24,76 @@ const TypingIndicator: React.FC = () => (
     </div>
 );
 
+// Typing effect component - reveals text word-by-word then shows FormattedMessage
+interface TypingMessageProps {
+    content: string;         // Clean text (for typing display)
+    displayContent: string;  // Original formatted text (for FormattedMessage after typing)
+    onComplete: () => void;
+}
+
+const TypingMessage: React.FC<TypingMessageProps> = ({ content, displayContent, onComplete }) => {
+    const words = React.useMemo(() => content.split(/\s+/).filter(Boolean), [content]);
+    const [wordIndex, setWordIndex] = React.useState(0);
+    const isComplete = wordIndex >= words.length;
+    const onCompleteRef = React.useRef(onComplete);
+    onCompleteRef.current = onComplete;
+
+    // Adaptive speed: shorter text = slower (more readable), longer text = faster
+    const speed = React.useMemo(() => {
+        if (words.length <= 15) return 50;  // Short: 50ms/word
+        if (words.length <= 40) return 35;  // Medium: 35ms/word
+        return 25;                           // Long: 25ms/word
+    }, [words.length]);
+
+    React.useEffect(() => {
+        if (isComplete) {
+            onCompleteRef.current();
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            setWordIndex(prev => prev + 1);
+        }, speed);
+
+        return () => clearTimeout(timer);
+    }, [wordIndex, isComplete, speed]);
+
+    if (isComplete) {
+        return <FormattedMessage content={displayContent} />;
+    }
+
+    return (
+        <p className="text-xs sm:text-sm leading-relaxed">
+            {words.slice(0, wordIndex).join(' ')}
+            <span className="typing-cursor" />
+        </p>
+    );
+};
+
 const ChatBubble: React.FC<ChatBubbleProps> = ({ messages, currentResponse, className = '', isProcessing = false }) => {
     const bottomRef = React.useRef<HTMLDivElement>(null);
+    const prevMessageCountRef = React.useRef(messages.length);
+    const [typingIndex, setTypingIndex] = React.useState<number | null>(null);
 
-    // Auto scroll to bottom when new messages arrive or processing starts
+    // Detect when a new assistant message is added → trigger typing effect
+    React.useEffect(() => {
+        if (messages.length > prevMessageCountRef.current) {
+            const lastMsg = messages[messages.length - 1];
+            if (lastMsg?.role === 'assistant') {
+                setTypingIndex(messages.length - 1);
+            }
+        }
+        prevMessageCountRef.current = messages.length;
+    }, [messages]);
+
+    const handleTypingComplete = React.useCallback(() => {
+        setTypingIndex(null);
+    }, []);
+
+    // Auto scroll to bottom
     React.useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, currentResponse, isProcessing]);
+    }, [messages, currentResponse, isProcessing, typingIndex]);
 
     return (
         <div className={`w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto overflow-y-auto px-1 sm:px-2 space-y-2 sm:space-y-3 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent ${className}`}>
@@ -52,7 +115,15 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ messages, currentResponse, clas
             `}
                     >
                         {message.role === 'assistant' ? (
-                            <FormattedMessage content={message.displayContent || message.content} />
+                            index === typingIndex ? (
+                                <TypingMessage
+                                    content={message.content}
+                                    displayContent={message.displayContent || message.content}
+                                    onComplete={handleTypingComplete}
+                                />
+                            ) : (
+                                <FormattedMessage content={message.displayContent || message.content} />
+                            )
                         ) : (
                             <p className="text-xs sm:text-sm leading-relaxed">{message.content}</p>
                         )}

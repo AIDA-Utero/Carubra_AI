@@ -85,6 +85,29 @@
   animation-delay: 0.4s;
 }
 
+/* Typing cursor blink */
+@keyframes cursorBlink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background-color: rgba(255, 255, 255, 0.7);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: cursorBlink 0.8s step-end infinite;
+}
+
 /* Animation utility classes */
 .animate-fadeIn {
   animation: fadeIn 0.4s ease-out forwards;
